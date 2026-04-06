@@ -1,0 +1,91 @@
+"""
+議事録生成モジュール
+Anthropic Claude API を使用して文字起こしから議事録を生成
+"""
+import os
+from datetime import datetime
+
+import anthropic
+from dotenv import load_dotenv
+
+load_dotenv()
+
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+MODEL = "claude-sonnet-4-5"
+
+SYSTEM_PROMPT = """\
+あなたは優秀な議事録作成アシスタントです。
+提供された会議の文字起こしを分析し、構造化された議事録をMarkdown形式で作成してください。
+文字起こしに含まれる情報のみを使用し、推測や補完は最小限にとどめてください。
+参加者が不明な場合は「不明」と記載してください。
+"""
+
+MINUTES_TEMPLATE = """\
+以下の会議の文字起こしから議事録を作成してください。
+
+【文字起こし】
+{transcript}
+
+【出力形式】
+以下のMarkdown形式で出力してください：
+
+# 議事録
+**日時**: {datetime}
+**参加者**: （文字起こしから推定。不明な場合は「不明」）
+
+## アジェンダ
+（会議で扱われたトピックを箇条書きで）
+
+## 議論のサマリー
+（主要な議論内容を簡潔にまとめる）
+
+## 決定事項
+（会議で決定・合意された事項を箇条書きで。なければ「特になし」）
+
+## アクションアイテム
+（担当者・期限・タスクを箇条書きで。なければ「特になし」）
+
+## 次回MTGについて
+（次回MTGの言及があれば記載。なければこのセクションは省略）
+"""
+
+
+async def generate_minutes(transcript: str) -> str:
+    """
+    文字起こしテキストから議事録を生成する。
+    """
+    if not ANTHROPIC_API_KEY:
+        raise ValueError("ANTHROPIC_API_KEY が設定されていません")
+
+    if not transcript.strip():
+        raise ValueError("文字起こしテキストが空です")
+
+    client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
+
+    now = datetime.now().strftime("%Y年%m月%d日 %H:%M")
+    user_message = MINUTES_TEMPLATE.format(
+        transcript=transcript,
+        datetime=now,
+    )
+
+    message = await client.messages.create(
+        model=MODEL,
+        max_tokens=4096,
+        system=SYSTEM_PROMPT,
+        messages=[
+            {"role": "user", "content": user_message}
+        ],
+    )
+
+    return message.content[0].text
+
+
+def save_minutes(content: str, output_dir: str = "outputs") -> str:
+    """議事録をMarkdownファイルとして保存し、ファイルパスを返す"""
+    os.makedirs(output_dir, exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"minutes_{timestamp}.md"
+    filepath = os.path.join(output_dir, filename)
+    with open(filepath, "w", encoding="utf-8") as f:
+        f.write(content)
+    return filepath

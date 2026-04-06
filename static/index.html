@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>音声議事録ツール</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f5f5f5;
+      --surface: #ffffff;
+      --surface2: #f0f0f0;
+      --border: #d8d8d8;
+      --accent: #111111;
+      --accent-hover: #333333;
+      --danger: #333333;
+      --success: #222222;
+      --text: #111111;
+      --text-muted: #888888;
+      --radius: 10px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px 64px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+    header h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    header p {
+      color: var(--text-muted);
+      margin-top: 6px;
+      font-size: 0.9rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      width: 100%;
+      max-width: 780px;
+      margin-bottom: 20px;
+    }
+    .card-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+
+    /* 設定エリア */
+    .settings-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    @media (max-width: 540px) { .settings-grid { grid-template-columns: 1fr; } }
+
+    label { display: block; font-size: 0.82rem; color: var(--text-muted); margin-bottom: 5px; }
+    select {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 8px 10px;
+      font-size: 0.9rem;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    select:focus { border-color: var(--accent); }
+
+    /* コントロールエリア */
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 22px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+    .btn-danger {
+      background: var(--danger);
+      color: #fff;
+    }
+    .btn-danger:hover:not(:disabled) { filter: brightness(1.1); }
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .btn-outline:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+
+    .timer {
+      font-family: "SF Mono", "Fira Code", monospace;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--accent);
+      min-width: 70px;
+    }
+    .timer.recording { color: var(--danger); }
+
+    /* 音声レベルバー */
+    .voice-level-wrap {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .voice-level-wrap.active { display: flex; }
+    .voice-level-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .voice-level-track {
+      flex: 1;
+      height: 6px;
+      background: var(--surface2);
+      border-radius: 3px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    #voice-bar {
+      height: 100%;
+      width: var(--level, 0%);
+      background: var(--border);
+      border-radius: 3px;
+      transition: width 0.1s ease, background 0.15s;
+    }
+    #voice-bar.speaking { background: var(--accent); }
+
+    /* 録音インジケーター */
+    .rec-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: #111111;
+      animation: pulse 1.2s infinite;
+      display: none;
+    }
+    .rec-dot.active { display: inline-block; }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.4; transform: scale(0.8); }
+    }
+
+    /* 文字起こしエリア */
+    .transcript-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      min-height: 160px;
+      max-height: 340px;
+      overflow-y: auto;
+      font-size: 0.92rem;
+      line-height: 1.75;
+      white-space: pre-wrap;
+      color: var(--text);
+    }
+    .transcript-box .placeholder {
+      color: var(--text-muted);
+      font-style: italic;
+    }
+    .chunk-sep {
+      display: block;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin: 8px 0 4px;
+      border-top: 1px solid var(--border);
+      padding-top: 8px;
+    }
+
+    /* スピナー */
+    .spinner-wrap {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-top: 12px;
+    }
+    .spinner-wrap.active { display: flex; }
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* 議事録エリア */
+    #minutes-section { display: none; }
+    .minutes-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    /* Markdown レンダリング */
+    .minutes-body {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      font-size: 0.92rem;
+      line-height: 1.8;
+    }
+    .minutes-body h1 { font-size: 1.25rem; margin-bottom: 12px; color: var(--text); }
+    .minutes-body h2 {
+      font-size: 1rem;
+      color: var(--accent);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 4px;
+      margin: 18px 0 8px;
+    }
+    .minutes-body p  { margin-bottom: 8px; }
+    .minutes-body ul { padding-left: 20px; margin-bottom: 8px; }
+    .minutes-body li { margin-bottom: 4px; }
+    .minutes-body strong { color: var(--text); }
+
+    /* エラー */
+    .error-box {
+      display: none;
+      background: rgba(255, 95, 109, 0.12);
+      border: 1px solid rgba(255, 95, 109, 0.4);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 0.9rem;
+      color: #ff8a93;
+      margin-top: 12px;
+    }
+    .error-box.active { display: block; }
+
+    /* ステータスバー */
+    .status-bar {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 10px;
+      min-height: 18px;
+    }
+    .status-bar.ok { color: var(--success); }
+    .status-bar.warn { color: #fbbf24; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>音声議事録ツール</h1>
+  <p>録音 → リアルタイム文字起こし → AI議事録生成</p>
+</header>
+
+<!-- 設定 -->
+<div class="card">
+  <div class="card-title">設定</div>
+  <div class="settings-grid">
+    <div>
+      <label for="mic-select">マイクデバイス</label>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <select id="mic-select" style="flex:1"><option value="">読み込み中...</option></select>
+        <button class="btn btn-outline" onclick="loadDevices()" style="padding:8px 12px;font-size:0.8rem;white-space:nowrap;">↺ 更新</button>
+      </div>
+    </div>
+    <div>
+      <label for="mode-select">Whisperモード</label>
+      <select id="mode-select">
+        <option value="local">ローカル（オフライン）</option>
+        <option value="api">OpenAI API</option>
+      </select>
+    </div>
+  </div>
+  <div class="status-bar" id="device-status"></div>
+</div>
+
+<!-- コントロール -->
+<div class="card">
+  <div class="card-title">コントロール</div>
+  <div class="controls">
+    <button class="btn btn-primary" id="start-btn" onclick="startRecording()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="8"/></svg>
+      録音開始
+    </button>
+    <button class="btn btn-danger" id="stop-btn" onclick="stopRecording()" disabled>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+      録音停止
+    </button>
+    <span class="rec-dot" id="rec-dot"></span>
+    <span class="timer" id="timer">00:00</span>
+  </div>
+  <div class="error-box" id="error-box"></div>
+  <div class="voice-level-wrap" id="voice-level-wrap">
+    <span class="voice-level-label" id="voice-status-label">待機中</span>
+    <div class="voice-level-track"><div id="voice-bar"></div></div>
+  </div>
+</div>
+
+<!-- 文字起こし -->
+<div class="card">
+  <div class="card-title">リアルタイム文字起こし</div>
+  <div class="transcript-box" id="transcript-box">
+    <span class="placeholder">録音を開始するとここに文字起こしが表示されます</span>
+  </div>
+  <div class="spinner-wrap" id="transcript-spinner">
+    <div class="spinner"></div>
+    <span id="spinner-label">文字起こし処理中...</span>
+  </div>
+</div>
+
+<!-- 議事録 -->
+<div class="card" id="minutes-section">
+  <div class="minutes-header">
+    <div class="card-title" style="margin-bottom:0">議事録</div>
+    <button class="btn btn-outline" onclick="downloadMinutes()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Markdownダウンロード
+    </button>
+  </div>
+  <div class="minutes-body" id="minutes-body"></div>
+</div>
+
+<script>
+  // ===== 状態 =====
+  let audioContext = null;
+  let scriptProcessor = null;
+  let micStream = null;
+  let ws = null;
+  let timerInterval = null;
+  let seconds = 0;
+  let minutesMarkdown = "";
+  let allSamples = [];      // 全PCMサンプル（停止時の送信用）
+  let partialSamples = [];  // チャンク送信用バッファ
+
+  // VAD設定
+  const SCRIPT_BUFFER    = 4096;
+  const SILENCE_THRESH   = 0.012;  // RMSがこれ以下で無音と判定
+  const SILENCE_MS       = 1500;   // この時間無音が続いたらチャンク送信（ms）
+  const MAX_CHUNK_MS     = 30000;  // 無音がなくてもこの時間で強制送信（ms）
+  const MIN_CHUNK_MS     = 1500;   // これ以下のチャンクは送信しない（ms）
+
+  let silenceStart  = null;   // 無音開始時刻
+  let chunkStart    = null;   // 現チャンク開始時刻
+  let isSpeaking    = false;  // 発話中フラグ（UI表示用）
+
+  // ===== 初期化：マイクデバイス一覧 =====
+  async function loadDevices() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(t => t.stop());
+
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const audioInputs = devices.filter(d => d.kind === "audioinput");
+
+      const sel = document.getElementById("mic-select");
+      sel.innerHTML = "";
+      audioInputs.forEach(d => {
+        const opt = document.createElement("option");
+        opt.value = d.deviceId;
+        opt.textContent = d.label || `マイク (${d.deviceId.slice(0, 8)}...)`;
+        sel.appendChild(opt);
+      });
+
+      if (audioInputs.length === 0) {
+        sel.innerHTML = '<option value="">マイクが見つかりません</option>';
+        setStatus("マイクデバイスが見つかりません", "warn");
+      } else {
+        setStatus(`${audioInputs.length}件のマイクを検出`, "ok");
+      }
+    } catch (err) {
+      console.error(err);
+      document.getElementById("mic-select").innerHTML = '<option value="">マイクへのアクセスが拒否されました</option>';
+      setStatus("マイクへのアクセスが拒否されました。ブラウザの設定でマイクを許可してください。", "warn");
+    }
+  }
+
+  function setStatus(msg, type = "") {
+    const el = document.getElementById("device-status");
+    el.textContent = msg;
+    el.className = "status-bar " + type;
+  }
+
+  // ===== 録音開始 =====
+  async function startRecording() {
+    hideError();
+    const deviceId = document.getElementById("mic-select").value;
+    const mode = document.getElementById("mode-select").value;
+
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: deviceId ? { deviceId: { exact: deviceId } } : true,
+      });
+    } catch (err) {
+      showError("マイクへのアクセスに失敗しました。ブラウザのマイク許可を確認してください。\n詳細: " + err.message);
+      return;
+    }
+
+    // リセット
+    document.getElementById("transcript-box").innerHTML = '<span class="placeholder">録音中... 15秒ごとに文字起こしが更新されます</span>';
+    document.getElementById("minutes-section").style.display = "none";
+    allSamples = [];
+    partialSamples = [];
+    minutesMarkdown = "";
+
+    // WebSocket 接続
+    const wsProtocol = location.protocol === "https:" ? "wss:" : "ws:";
+    ws = new WebSocket(`${wsProtocol}//${location.host}/ws/transcribe`);
+    ws.binaryType = "arraybuffer";
+    ws.onopen = () => ws.send(JSON.stringify({ type: "set_mode", mode }));
+    ws.onmessage = (event) => handleServerMessage(JSON.parse(event.data));
+    ws.onerror = () => showError("WebSocket接続エラーが発生しました。");
+    ws.onclose = () => setSpinner(false);
+
+    // Web Audio APIでPCM直接キャプチャ（コンテナ形式の問題を回避）
+    micStream = stream;
+    audioContext = new AudioContext();
+    const source = audioContext.createMediaStreamSource(stream);
+    scriptProcessor = audioContext.createScriptProcessor(SCRIPT_BUFFER, 1, 1);
+
+    chunkStart = Date.now();
+    silenceStart = null;
+
+    scriptProcessor.onaudioprocess = (e) => {
+      const raw = e.inputBuffer.getChannelData(0);
+      const samples = new Float32Array(raw);
+      allSamples.push(samples);
+      partialSamples.push(samples);
+
+      // RMS計算（音量）
+      let sum = 0;
+      for (let i = 0; i < raw.length; i++) sum += raw[i] * raw[i];
+      const rms = Math.sqrt(sum / raw.length);
+
+      updateVoiceIndicator(rms);
+
+      const now = Date.now();
+      const chunkAge = now - chunkStart;
+
+      if (rms < SILENCE_THRESH) {
+        // 無音区間
+        if (!silenceStart) silenceStart = now;
+        const silenceAge = now - silenceStart;
+        if (silenceAge >= SILENCE_MS && chunkAge >= MIN_CHUNK_MS) {
+          sendPartialChunk();
+        }
+      } else {
+        // 発話中：無音タイマーをリセット
+        silenceStart = null;
+        // 最大チャンク時間を超えたら強制送信
+        if (chunkAge >= MAX_CHUNK_MS) {
+          sendPartialChunk();
+        }
+      }
+    };
+
+    source.connect(scriptProcessor);
+    scriptProcessor.connect(audioContext.destination);
+
+    // タイマー
+    seconds = 0;
+    updateTimer();
+    timerInterval = setInterval(() => { seconds++; updateTimer(); }, 1000);
+
+    document.getElementById("start-btn").disabled = true;
+    document.getElementById("stop-btn").disabled = false;
+    document.getElementById("rec-dot").classList.add("active");
+    document.getElementById("timer").classList.add("recording");
+    document.getElementById("voice-level-wrap").classList.add("active");
+  }
+
+  // ===== 録音停止 =====
+  function stopRecording() {
+    clearInterval(timerInterval);
+
+    document.getElementById("start-btn").disabled = false;
+    document.getElementById("stop-btn").disabled = true;
+    document.getElementById("rec-dot").classList.remove("active");
+    document.getElementById("timer").classList.remove("recording");
+    document.getElementById("voice-level-wrap").classList.remove("active");
+    const bar = document.getElementById("voice-bar");
+    bar.style.setProperty("--level", "0%");
+    bar.classList.remove("speaking");
+
+    // AudioContext を停止
+    if (scriptProcessor) { scriptProcessor.disconnect(); scriptProcessor = null; }
+    const sampleRate = audioContext ? audioContext.sampleRate : 44100;
+    if (audioContext) { audioContext.close(); audioContext = null; }
+    if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
+
+    // 全サンプルをWAVエンコードして送信
+    if (ws && ws.readyState === WebSocket.OPEN && allSamples.length > 0) {
+      setSpinner(true, "音声を文字起こし中...");
+      const wav = encodeWAV(mergeFloat32(allSamples), sampleRate);
+      allSamples = [];
+      wav.arrayBuffer().then(buf => {
+        ws.send(buf);
+        ws.send(JSON.stringify({ type: "end" }));
+      });
+    }
+  }
+
+  // ===== サーバーメッセージ処理 =====
+  function handleServerMessage(data) {
+    switch (data.type) {
+      case "transcript_partial": {
+        // リアルタイム：チャンクの文字起こしを追記
+        appendTranscript(data.text);
+        setSpinner(false);
+        break;
+      }
+      case "transcript": {
+        // 最終文字起こし（全体）で上書き
+        const box = document.getElementById("transcript-box");
+        box.innerHTML = "";
+        const span = document.createElement("span");
+        span.textContent = data.text;
+        box.appendChild(span);
+        setSpinner(true, "議事録を生成中...");
+        break;
+      }
+      case "generating_minutes": {
+        setSpinner(true, "議事録を生成中...");
+        break;
+      }
+      case "minutes": {
+        setSpinner(false);
+        minutesMarkdown = data.text;
+        showMinutes(data.text);
+        break;
+      }
+      case "warning": {
+        console.warn(data.message);
+        break;
+      }
+      case "error": {
+        setSpinner(false);
+        showError(data.message);
+        break;
+      }
+    }
+  }
+
+  // ===== 文字起こし追記 =====
+  function appendTranscript(text) {
+    const box = document.getElementById("transcript-box");
+    const ph = box.querySelector(".placeholder");
+    if (ph) ph.remove();
+    const span = document.createElement("span");
+    span.textContent = text + " ";
+    box.appendChild(span);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  // ===== 議事録表示（Markdownパース） =====
+  function showMinutes(md) {
+    const section = document.getElementById("minutes-section");
+    const body = document.getElementById("minutes-body");
+    body.innerHTML = parseMarkdown(md);
+    section.style.display = "block";
+    section.scrollIntoView({ behavior: "smooth" });
+  }
+
+  // 軽量Markdownパーサー（外部ライブラリなし）
+  function parseMarkdown(md) {
+    let html = md
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      // 見出し
+      .replace(/^### (.+)$/gm, "<h3>$1</h3>")
+      .replace(/^## (.+)$/gm, "<h2>$1</h2>")
+      .replace(/^# (.+)$/gm, "<h1>$1</h1>")
+      // 太字
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      // 斜体
+      .replace(/\*(.+?)\*/g, "<em>$1</em>")
+      // 箇条書き
+      .replace(/^[*\-] (.+)$/gm, "<li>$1</li>")
+      // 番号付きリスト
+      .replace(/^\d+\. (.+)$/gm, "<li>$1</li>")
+      // 連続する<li>をulでラップ
+      .replace(/(<li>[\s\S]+?<\/li>)(\n(?!<li>)|$)/g, (m) => "<ul>" + m + "</ul>")
+      // 空行を段落区切りに
+      .replace(/\n{2,}/g, "</p><p>")
+      // 残りの改行
+      .replace(/\n/g, "<br>");
+
+    return "<p>" + html + "</p>";
+  }
+
+  // ===== ダウンロード =====
+  function downloadMinutes() {
+    if (!minutesMarkdown) return;
+    const now = new Date();
+    const ts = now.toISOString().slice(0, 19).replace(/[T:]/g, "-");
+    const blob = new Blob([minutesMarkdown], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `minutes_${ts}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ===== ユーティリティ =====
+  function updateTimer() {
+    const m = String(Math.floor(seconds / 60)).padStart(2, "0");
+    const s = String(seconds % 60).padStart(2, "0");
+    document.getElementById("timer").textContent = `${m}:${s}`;
+  }
+
+  function setSpinner(active, label = "処理中...") {
+    const wrap = document.getElementById("transcript-spinner");
+    wrap.classList.toggle("active", active);
+    document.getElementById("spinner-label").textContent = label;
+  }
+
+  function showError(msg) {
+    const box = document.getElementById("error-box");
+    box.textContent = msg;
+    box.classList.add("active");
+  }
+
+  function hideError() {
+    document.getElementById("error-box").classList.remove("active");
+  }
+
+  // ===== VADチャンク送信 =====
+  function sendPartialChunk() {
+    if (partialSamples.length === 0 || !ws || ws.readyState !== WebSocket.OPEN) {
+      partialSamples = [];
+      chunkStart = Date.now();
+      silenceStart = null;
+      return;
+    }
+    const sampleRate = audioContext ? audioContext.sampleRate : 44100;
+    const wav = encodeWAV(mergeFloat32(partialSamples), sampleRate);
+    partialSamples = [];
+    chunkStart = Date.now();
+    silenceStart = null;
+    setSpinner(true, "文字起こし処理中...");
+    wav.arrayBuffer().then(buf => {
+      ws.send(buf);
+      ws.send(JSON.stringify({ type: "partial" }));
+    });
+  }
+
+  // ===== 音声レベルインジケーター =====
+  function updateVoiceIndicator(rms) {
+    const bar = document.getElementById("voice-bar");
+    if (!bar) return;
+    const speaking = rms >= SILENCE_THRESH;
+    if (speaking !== isSpeaking) {
+      isSpeaking = speaking;
+      bar.classList.toggle("speaking", speaking);
+      const label = document.getElementById("voice-status-label");
+      if (label) label.textContent = speaking ? "発話中" : "待機中";
+    }
+    // バーの幅でレベル表示（最大100%）
+    const pct = Math.min(100, Math.round(rms / 0.1 * 100));
+    bar.style.setProperty("--level", pct + "%");
+  }
+
+  // ===== WAVエンコーダー =====
+  function mergeFloat32(arrays) {
+    const total = arrays.reduce((s, a) => s + a.length, 0);
+    const out = new Float32Array(total);
+    let offset = 0;
+    for (const a of arrays) { out.set(a, offset); offset += a.length; }
+    return out;
+  }
+
+  function encodeWAV(samples, sampleRate) {
+    const dataLen = samples.length * 2; // 16-bit PCM
+    const buf = new ArrayBuffer(44 + dataLen);
+    const v = new DataView(buf);
+    const write = (off, str) => { for (let i = 0; i < str.length; i++) v.setUint8(off + i, str.charCodeAt(i)); };
+    write(0,  "RIFF"); v.setUint32(4,  36 + dataLen, true);
+    write(8,  "WAVE"); write(12, "fmt ");
+    v.setUint32(16, 16, true);     // chunk size
+    v.setUint16(20, 1,  true);     // PCM
+    v.setUint16(22, 1,  true);     // mono
+    v.setUint32(24, sampleRate, true);
+    v.setUint32(28, sampleRate * 2, true); // byte rate
+    v.setUint16(32, 2,  true);     // block align
+    v.setUint16(34, 16, true);     // bits per sample
+    write(36, "data"); v.setUint32(40, dataLen, true);
+    let off = 44;
+    for (let i = 0; i < samples.length; i++) {
+      const s = Math.max(-1, Math.min(1, samples[i]));
+      v.setInt16(off, s < 0 ? s * 32768 : s * 32767, true);
+      off += 2;
+    }
+    return new Blob([buf], { type: "audio/wav" });
+  }
+
+  // ===== 起動 =====
+  loadDevices();
+</script>
+</body>
+</html>

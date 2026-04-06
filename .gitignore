@@ -1,0 +1,26 @@
+# 環境変数・シークレット（絶対にコミットしない）
+.env
+
+# 録音一時ファイル
+temp/
+*.wav
+*.webm
+*.mp4
+*.mp3
+
+# 生成された議事録（任意）
+# outputs/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# macOS
+.DS_Store
+
+# エディタ
+.vscode/
+.idea/
