@@ -9,13 +9,15 @@ import uuid
 from pathlib import Path
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+import firebase_admin
+from firebase_admin import auth as firebase_auth, firestore as fb_firestore
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Header, Query as QueryParam
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from dotenv import load_dotenv
 
 from transcribe import transcribe_audio, preload_model
-from minutes import generate_minutes, save_minutes
+from minutes import generate_minutes, save_minutes, save_to_firestore, list_from_firestore
 
 load_dotenv()
 
@@ -24,10 +26,22 @@ OUTPUTS_DIR = Path("outputs")
 TEMP_DIR.mkdir(exist_ok=True)
 OUTPUTS_DIR.mkdir(exist_ok=True)
 
+db = None
+
+
+async def _verify_token(token: str) -> str:
+    """Firebase ID token を検証して uid を返す"""
+    loop = asyncio.get_event_loop()
+    decoded = await loop.run_in_executor(None, firebase_auth.verify_id_token, token)
+    return decoded["uid"]
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # ローカルWhisperモデルを起動時にプリロード
+    global db
+    firebase_admin.initialize_app()
+    db = fb_firestore.client()
+
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, preload_model)
     yield
@@ -42,15 +56,39 @@ async def index():
     return FileResponse("static/index.html")
 
 
+@app.get("/api/minutes")
+async def get_minutes_list(authorization: str = Header(None)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="認証が必要です")
+    token = authorization[7:]
+    try:
+        uid = await _verify_token(token)
+    except Exception:
+        raise HTTPException(status_code=401, detail="トークンが無効です")
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(None, list_from_firestore, db, uid)
+    return {"minutes": result}
+
+
 @app.websocket("/ws/transcribe")
-async def websocket_transcribe(websocket: WebSocket):
+async def websocket_transcribe(websocket: WebSocket, token: str = QueryParam(None)):
     await websocket.accept()
+
+    # 認証
+    uid = None
+    try:
+        uid = await _verify_token(token or "")
+    except Exception:
+        await websocket.send_json({"type": "error", "message": "認証に失敗しました。再ログインしてください。"})
+        await websocket.close()
+        return
+
     session_id = str(uuid.uuid4())[:8]
-    pending_audio: bytes | None = None  # 直前に受け取ったバイナリ
+    pending_audio: bytes | None = None
     final_transcript: str = ""
     whisper_mode = os.getenv("WHISPER_MODE", "local")
 
-    print(f"[{session_id}] WebSocket接続")
+    print(f"[{session_id}] WebSocket接続 uid={uid}")
 
     async def transcribe_pending(label: str) -> str:
         """pending_audio をファイルに書いて文字起こし、結果を返す"""
@@ -73,7 +111,6 @@ async def websocket_transcribe(websocket: WebSocket):
         while True:
             message = await websocket.receive()
 
-            # バイナリ（音声データ）：次のJSONコマンドと対になる
             if "bytes" in message and message["bytes"]:
                 pending_audio = message["bytes"]
                 print(f"[{session_id}] 音声受信 ({len(pending_audio):,} bytes)")
@@ -91,13 +128,11 @@ async def websocket_transcribe(websocket: WebSocket):
                     print(f"[{session_id}] Whisperモード: {whisper_mode}")
 
                 elif msg_type == "partial":
-                    # リアルタイム文字起こし（15秒チャンク）
                     try:
                         text = await transcribe_pending("partial")
                         if text.strip():
                             await websocket.send_json({"type": "transcript_partial", "text": text})
                     except Exception as e:
-                        # リアルタイム失敗は警告のみ、録音継続
                         await websocket.send_json({
                             "type": "warning",
                             "message": f"一部の文字起こしに失敗しました: {str(e)}",
@@ -113,7 +148,6 @@ async def websocket_transcribe(websocket: WebSocket):
                         })
                         break
 
-                    # 全音声の最終文字起こし
                     try:
                         final_transcript = await transcribe_pending("final")
                     except Exception as e:
@@ -132,7 +166,6 @@ async def websocket_transcribe(websocket: WebSocket):
 
                     await websocket.send_json({"type": "transcript", "text": final_transcript})
 
-                    # 議事録生成
                     try:
                         await websocket.send_json({"type": "generating_minutes"})
                         minutes_text = await generate_minutes(final_transcript)
@@ -145,6 +178,18 @@ async def websocket_transcribe(websocket: WebSocket):
                             "type": "error",
                             "message": f"議事録の生成に失敗しました: {str(e)}",
                         })
+                        break
+
+                    # Firestore 保存（失敗しても続行）
+                    try:
+                        loop = asyncio.get_event_loop()
+                        await loop.run_in_executor(
+                            None, save_to_firestore, db, uid, final_transcript, minutes_text
+                        )
+                        print(f"[{session_id}] Firestore保存完了")
+                    except Exception as e:
+                        print(f"[{session_id}] Firestore保存エラー: {e}")
+
                     break
 
     except WebSocketDisconnect:

@@ -32,19 +32,91 @@
       padding: 32px 16px 64px;
     }
 
+    /* ===== 認証画面 ===== */
+    #auth-section {
+      width: 100%;
+      max-width: 400px;
+      margin-top: 60px;
+    }
+    #auth-section header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    #auth-section header h1 { font-size: 1.8rem; font-weight: 700; }
+    #auth-section header p { color: var(--text-muted); margin-top: 6px; font-size: 0.9rem; }
+
+    .auth-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+    .auth-tab {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .auth-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    .auth-form { display: none; }
+    .auth-form.active { display: block; }
+
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 0.82rem; color: var(--text-muted); margin-bottom: 5px; }
+    .form-group input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 10px 12px;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-group input:focus { border-color: var(--accent); }
+
+    .auth-error {
+      display: none;
+      background: rgba(255, 95, 109, 0.12);
+      border: 1px solid rgba(255, 95, 109, 0.4);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.85rem;
+      color: #ff5f6d;
+      margin-bottom: 14px;
+    }
+    .auth-error.active { display: block; }
+
+    /* ===== アプリ画面 ===== */
+    #app-section { display: none; width: 100%; max-width: 780px; }
+
     header {
       text-align: center;
       margin-bottom: 36px;
     }
-    header h1 {
-      font-size: 1.8rem;
-      font-weight: 700;
-      color: var(--text);
-    }
-    header p {
+    header h1 { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+    header p { color: var(--text-muted); margin-top: 6px; font-size: 0.9rem; }
+
+    /* ユーザーバー */
+    .user-bar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      max-width: 780px;
+      margin-bottom: 16px;
+      font-size: 0.82rem;
       color: var(--text-muted);
-      margin-top: 6px;
-      font-size: 0.9rem;
     }
 
     .card {
@@ -53,7 +125,6 @@
       border-radius: var(--radius);
       padding: 24px;
       width: 100%;
-      max-width: 780px;
       margin-bottom: 20px;
     }
     .card-title {
@@ -65,7 +136,6 @@
       margin-bottom: 14px;
     }
 
-    /* 設定エリア */
     .settings-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -88,7 +158,6 @@
     }
     select:focus { border-color: var(--accent); }
 
-    /* コントロールエリア */
     .controls {
       display: flex;
       align-items: center;
@@ -108,15 +177,9 @@
       transition: all 0.15s;
     }
     .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .btn-primary {
-      background: var(--accent);
-      color: #fff;
-    }
+    .btn-primary { background: var(--accent); color: #fff; }
     .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
-    .btn-danger {
-      background: var(--danger);
-      color: #fff;
-    }
+    .btn-danger { background: var(--danger); color: #fff; }
     .btn-danger:hover:not(:disabled) { filter: brightness(1.1); }
     .btn-outline {
       background: transparent;
@@ -134,7 +197,6 @@
     }
     .timer.recording { color: var(--danger); }
 
-    /* 音声レベルバー */
     .voice-level-wrap {
       display: none;
       align-items: center;
@@ -142,14 +204,9 @@
       margin-top: 14px;
     }
     .voice-level-wrap.active { display: flex; }
-    .voice-level-label {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      white-space: nowrap;
-    }
+    .voice-level-label { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; }
     .voice-level-track {
-      flex: 1;
-      height: 6px;
+      flex: 1; height: 6px;
       background: var(--surface2);
       border-radius: 3px;
       overflow: hidden;
@@ -164,7 +221,6 @@
     }
     #voice-bar.speaking { background: var(--accent); }
 
-    /* 録音インジケーター */
     .rec-dot {
       width: 10px; height: 10px;
       border-radius: 50%;
@@ -178,7 +234,6 @@
       50%       { opacity: 0.4; transform: scale(0.8); }
     }
 
-    /* 文字起こしエリア */
     .transcript-box {
       background: var(--surface2);
       border: 1px solid var(--border);
@@ -192,20 +247,8 @@
       white-space: pre-wrap;
       color: var(--text);
     }
-    .transcript-box .placeholder {
-      color: var(--text-muted);
-      font-style: italic;
-    }
-    .chunk-sep {
-      display: block;
-      color: var(--text-muted);
-      font-size: 0.75rem;
-      margin: 8px 0 4px;
-      border-top: 1px solid var(--border);
-      padding-top: 8px;
-    }
+    .transcript-box .placeholder { color: var(--text-muted); font-style: italic; }
 
-    /* スピナー */
     .spinner-wrap {
       display: none;
       align-items: center;
@@ -224,7 +267,6 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* 議事録エリア */
     #minutes-section { display: none; }
     .minutes-header {
       display: flex;
@@ -232,8 +274,6 @@
       align-items: center;
       margin-bottom: 14px;
     }
-
-    /* Markdown レンダリング */
     .minutes-body {
       background: var(--surface2);
       border: 1px solid var(--border);
@@ -255,7 +295,24 @@
     .minutes-body li { margin-bottom: 4px; }
     .minutes-body strong { color: var(--text); }
 
-    /* エラー */
+    /* 履歴 */
+    .history-list { display: flex; flex-direction: column; gap: 8px; }
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .history-item:hover { border-color: var(--accent); }
+    .history-item-title { font-size: 0.9rem; font-weight: 600; }
+    .history-item-date { font-size: 0.78rem; color: var(--text-muted); }
+    .history-empty { color: var(--text-muted); font-size: 0.9rem; font-style: italic; }
+
     .error-box {
       display: none;
       background: rgba(255, 95, 109, 0.12);
@@ -268,7 +325,6 @@
     }
     .error-box.active { display: block; }
 
-    /* ステータスバー */
     .status-bar {
       font-size: 0.8rem;
       color: var(--text-muted);
@@ -281,81 +337,279 @@
 </head>
 <body>
 
-<header>
-  <h1>音声議事録ツール</h1>
-  <p>録音 → リアルタイム文字起こし → AI議事録生成</p>
-</header>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-auth-compat.js"></script>
 
-<!-- 設定 -->
-<div class="card">
-  <div class="card-title">設定</div>
-  <div class="settings-grid">
-    <div>
-      <label for="mic-select">マイクデバイス</label>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <select id="mic-select" style="flex:1"><option value="">読み込み中...</option></select>
-        <button class="btn btn-outline" onclick="loadDevices()" style="padding:8px 12px;font-size:0.8rem;white-space:nowrap;">↺ 更新</button>
+<!-- ===== 認証画面 ===== -->
+<div id="auth-section">
+  <header>
+    <h1>音声議事録ツール</h1>
+    <p>録音 → 文字起こし → AI議事録生成</p>
+  </header>
+  <div class="card">
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="switchTab('login')">ログイン</div>
+      <div class="auth-tab" onclick="switchTab('signup')">新規登録</div>
+    </div>
+    <div id="auth-error" class="auth-error"></div>
+
+    <div id="login-form" class="auth-form active">
+      <div class="form-group">
+        <label for="login-email">メールアドレス</label>
+        <input type="email" id="login-email" placeholder="you@example.com" />
+      </div>
+      <div class="form-group">
+        <label for="login-password">パスワード</label>
+        <input type="password" id="login-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')login()" />
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:4px" onclick="login()">ログイン</button>
+    </div>
+
+    <div id="signup-form" class="auth-form">
+      <div class="form-group">
+        <label for="signup-email">メールアドレス</label>
+        <input type="email" id="signup-email" placeholder="you@example.com" />
+      </div>
+      <div class="form-group">
+        <label for="signup-password">パスワード（6文字以上）</label>
+        <input type="password" id="signup-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')signup()" />
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:4px" onclick="signup()">登録</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== アプリ画面 ===== -->
+<div id="app-section">
+  <div class="user-bar">
+    <span id="user-email"></span>
+    <button class="btn btn-outline" style="padding:6px 14px;font-size:0.82rem" onclick="logout()">ログアウト</button>
+  </div>
+
+  <header>
+    <h1>音声議事録ツール</h1>
+    <p>録音 → 文字起こし → AI議事録生成</p>
+  </header>
+
+  <!-- 設定 -->
+  <div class="card">
+    <div class="card-title">設定</div>
+    <div class="settings-grid">
+      <div>
+        <label for="mic-select">マイクデバイス</label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <select id="mic-select" style="flex:1"><option value="">読み込み中...</option></select>
+          <button class="btn btn-outline" onclick="loadDevices()" style="padding:8px 12px;font-size:0.8rem;white-space:nowrap;">↺ 更新</button>
+        </div>
+      </div>
+      <div>
+        <label for="mode-select">Whisperモード</label>
+        <select id="mode-select">
+          <option value="api">OpenAI API</option>
+          <option value="local">ローカル（オフライン）</option>
+        </select>
       </div>
     </div>
-    <div>
-      <label for="mode-select">Whisperモード</label>
-      <select id="mode-select">
-        <option value="local">ローカル（オフライン）</option>
-        <option value="api">OpenAI API</option>
-      </select>
+    <div class="status-bar" id="device-status"></div>
+  </div>
+
+  <!-- コントロール -->
+  <div class="card">
+    <div class="card-title">コントロール</div>
+    <div class="controls">
+      <button class="btn btn-primary" id="start-btn" onclick="startRecording()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="8"/></svg>
+        録音開始
+      </button>
+      <button class="btn btn-danger" id="stop-btn" onclick="stopRecording()" disabled>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+        録音停止
+      </button>
+      <span class="rec-dot" id="rec-dot"></span>
+      <span class="timer" id="timer">00:00</span>
+    </div>
+    <div class="error-box" id="error-box"></div>
+    <div class="voice-level-wrap" id="voice-level-wrap">
+      <span class="voice-level-label" id="voice-status-label">待機中</span>
+      <div class="voice-level-track"><div id="voice-bar"></div></div>
     </div>
   </div>
-  <div class="status-bar" id="device-status"></div>
-</div>
 
-<!-- コントロール -->
-<div class="card">
-  <div class="card-title">コントロール</div>
-  <div class="controls">
-    <button class="btn btn-primary" id="start-btn" onclick="startRecording()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="8"/></svg>
-      録音開始
-    </button>
-    <button class="btn btn-danger" id="stop-btn" onclick="stopRecording()" disabled>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
-      録音停止
-    </button>
-    <span class="rec-dot" id="rec-dot"></span>
-    <span class="timer" id="timer">00:00</span>
+  <!-- 文字起こし -->
+  <div class="card">
+    <div class="card-title">文字起こし</div>
+    <div class="transcript-box" id="transcript-box">
+      <span class="placeholder">録音を開始するとここに文字起こしが表示されます</span>
+    </div>
+    <div class="spinner-wrap" id="transcript-spinner">
+      <div class="spinner"></div>
+      <span id="spinner-label">文字起こし処理中...</span>
+    </div>
   </div>
-  <div class="error-box" id="error-box"></div>
-  <div class="voice-level-wrap" id="voice-level-wrap">
-    <span class="voice-level-label" id="voice-status-label">待機中</span>
-    <div class="voice-level-track"><div id="voice-bar"></div></div>
-  </div>
-</div>
 
-<!-- 文字起こし -->
-<div class="card">
-  <div class="card-title">リアルタイム文字起こし</div>
-  <div class="transcript-box" id="transcript-box">
-    <span class="placeholder">録音を開始するとここに文字起こしが表示されます</span>
+  <!-- 議事録 -->
+  <div class="card" id="minutes-section">
+    <div class="minutes-header">
+      <div class="card-title" style="margin-bottom:0">議事録</div>
+      <button class="btn btn-outline" onclick="downloadMinutes()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Markdownダウンロード
+      </button>
+    </div>
+    <div class="minutes-body" id="minutes-body"></div>
   </div>
-  <div class="spinner-wrap" id="transcript-spinner">
-    <div class="spinner"></div>
-    <span id="spinner-label">文字起こし処理中...</span>
-  </div>
-</div>
 
-<!-- 議事録 -->
-<div class="card" id="minutes-section">
-  <div class="minutes-header">
-    <div class="card-title" style="margin-bottom:0">議事録</div>
-    <button class="btn btn-outline" onclick="downloadMinutes()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Markdownダウンロード
-    </button>
+  <!-- 履歴 -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <div class="card-title" style="margin-bottom:0">議事録履歴</div>
+      <button class="btn btn-outline" onclick="loadHistory()" style="padding:6px 12px;font-size:0.8rem;">↺ 更新</button>
+    </div>
+    <div class="history-list" id="history-list">
+      <span class="history-empty">読み込み中...</span>
+    </div>
   </div>
-  <div class="minutes-body" id="minutes-body"></div>
 </div>
 
 <script>
-  // ===== 状態 =====
+  // ===== Firebase 初期化 =====
+  const firebaseConfig = {
+    apiKey: "AIzaSyDcrGEWdRgGa-m8zrVHcYK8sdmervasO2U",
+    authDomain: "devapp-onsensei.firebaseapp.com",
+    projectId: "devapp-onsensei",
+    storageBucket: "devapp-onsensei.firebasestorage.app",
+    messagingSenderId: "962007406094",
+    appId: "1:962007406094:web:eb6ca8ec56fea29d04ce5f"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+
+  // ===== 認証状態の監視 =====
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      document.getElementById("auth-section").style.display = "none";
+      document.getElementById("app-section").style.display = "block";
+      document.getElementById("user-email").textContent = user.email;
+      loadDevices();
+      loadHistory();
+    } else {
+      document.getElementById("auth-section").style.display = "block";
+      document.getElementById("app-section").style.display = "none";
+    }
+  });
+
+  // ===== 認証フォーム =====
+  function switchTab(tab) {
+    document.querySelectorAll(".auth-tab").forEach((el, i) => {
+      el.classList.toggle("active", (i === 0 && tab === "login") || (i === 1 && tab === "signup"));
+    });
+    document.getElementById("login-form").classList.toggle("active", tab === "login");
+    document.getElementById("signup-form").classList.toggle("active", tab === "signup");
+    hideAuthError();
+  }
+
+  async function login() {
+    const email = document.getElementById("login-email").value.trim();
+    const password = document.getElementById("login-password").value;
+    if (!email || !password) { showAuthError("メールアドレスとパスワードを入力してください"); return; }
+    try {
+      await auth.signInWithEmailAndPassword(email, password);
+    } catch (err) {
+      showAuthError(authErrorMessage(err.code));
+    }
+  }
+
+  async function signup() {
+    const email = document.getElementById("signup-email").value.trim();
+    const password = document.getElementById("signup-password").value;
+    if (!email || !password) { showAuthError("メールアドレスとパスワードを入力してください"); return; }
+    try {
+      await auth.createUserWithEmailAndPassword(email, password);
+    } catch (err) {
+      showAuthError(authErrorMessage(err.code));
+    }
+  }
+
+  function logout() {
+    auth.signOut();
+  }
+
+  function showAuthError(msg) {
+    const el = document.getElementById("auth-error");
+    el.textContent = msg;
+    el.classList.add("active");
+  }
+  function hideAuthError() {
+    document.getElementById("auth-error").classList.remove("active");
+  }
+
+  function authErrorMessage(code) {
+    const map = {
+      "auth/invalid-email": "メールアドレスの形式が正しくありません",
+      "auth/user-not-found": "アカウントが見つかりません",
+      "auth/wrong-password": "パスワードが間違っています",
+      "auth/invalid-credential": "メールアドレスまたはパスワードが間違っています",
+      "auth/email-already-in-use": "このメールアドレスは既に使用されています",
+      "auth/weak-password": "パスワードは6文字以上にしてください",
+      "auth/too-many-requests": "試行回数が多すぎます。しばらく待ってから再試行してください",
+    };
+    return map[code] || "エラーが発生しました: " + code;
+  }
+
+  async function getToken() {
+    const user = auth.currentUser;
+    if (!user) throw new Error("ログインが必要です");
+    return user.getIdToken();
+  }
+
+  // ===== 履歴読み込み =====
+  async function loadHistory() {
+    const list = document.getElementById("history-list");
+    try {
+      const token = await getToken();
+      const res = await fetch("/api/minutes", {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error("取得失敗");
+      const data = await res.json();
+      renderHistory(data.minutes);
+    } catch (err) {
+      list.innerHTML = '<span class="history-empty">履歴の読み込みに失敗しました</span>';
+    }
+  }
+
+  function renderHistory(items) {
+    const list = document.getElementById("history-list");
+    if (!items || items.length === 0) {
+      list.innerHTML = '<span class="history-empty">まだ議事録がありません</span>';
+      return;
+    }
+    list.innerHTML = "";
+    items.forEach(item => {
+      const el = document.createElement("div");
+      el.className = "history-item";
+      const date = item.created_at ? new Date(item.created_at).toLocaleString("ja-JP", {
+        year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit"
+      }) : "";
+      el.innerHTML = `
+        <span class="history-item-title">${escapeHtml(item.title)}</span>
+        <span class="history-item-date">${date}</span>
+      `;
+      el.onclick = () => {
+        minutesMarkdown = item.minutes_text;
+        showMinutes(item.minutes_text);
+      };
+      list.appendChild(el);
+    });
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  // ===== 録音状態 =====
   let audioContext = null;
   let scriptProcessor = null;
   let micStream = null;
@@ -363,29 +617,26 @@
   let timerInterval = null;
   let seconds = 0;
   let minutesMarkdown = "";
-  let allSamples = [];      // 全PCMサンプル（停止時の送信用）
-  let partialSamples = [];  // チャンク送信用バッファ
+  let allSamples = [];
+  let partialSamples = [];
 
-  // VAD設定
-  const SCRIPT_BUFFER    = 4096;
-  const SILENCE_THRESH   = 0.012;  // RMSがこれ以下で無音と判定
-  const SILENCE_MS       = 1500;   // この時間無音が続いたらチャンク送信（ms）
-  const MAX_CHUNK_MS     = 30000;  // 無音がなくてもこの時間で強制送信（ms）
-  const MIN_CHUNK_MS     = 1500;   // これ以下のチャンクは送信しない（ms）
+  const SCRIPT_BUFFER  = 4096;
+  const SILENCE_THRESH = 0.012;
+  const SILENCE_MS     = 1500;
+  const MAX_CHUNK_MS   = 30000;
+  const MIN_CHUNK_MS   = 1500;
 
-  let silenceStart  = null;   // 無音開始時刻
-  let chunkStart    = null;   // 現チャンク開始時刻
-  let isSpeaking    = false;  // 発話中フラグ（UI表示用）
+  let silenceStart = null;
+  let chunkStart   = null;
+  let isSpeaking   = false;
 
-  // ===== 初期化：マイクデバイス一覧 =====
+  // ===== マイクデバイス一覧 =====
   async function loadDevices() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       stream.getTracks().forEach(t => t.stop());
-
       const devices = await navigator.mediaDevices.enumerateDevices();
       const audioInputs = devices.filter(d => d.kind === "audioinput");
-
       const sel = document.getElementById("mic-select");
       sel.innerHTML = "";
       audioInputs.forEach(d => {
@@ -394,7 +645,6 @@
         opt.textContent = d.label || `マイク (${d.deviceId.slice(0, 8)}...)`;
         sel.appendChild(opt);
       });
-
       if (audioInputs.length === 0) {
         sel.innerHTML = '<option value="">マイクが見つかりません</option>';
         setStatus("マイクデバイスが見つかりません", "warn");
@@ -402,9 +652,8 @@
         setStatus(`${audioInputs.length}件のマイクを検出`, "ok");
       }
     } catch (err) {
-      console.error(err);
-      document.getElementById("mic-select").innerHTML = '<option value="">マイクへのアクセスが拒否されました</option>';
-      setStatus("マイクへのアクセスが拒否されました。ブラウザの設定でマイクを許可してください。", "warn");
+      document.getElementById("mic-select").innerHTML = '<option value="">アクセス拒否</option>';
+      setStatus("マイクへのアクセスが拒否されました", "warn");
     }
   }
 
@@ -420,33 +669,40 @@
     const deviceId = document.getElementById("mic-select").value;
     const mode = document.getElementById("mode-select").value;
 
+    // Firebase トークン取得
+    let token;
+    try {
+      token = await getToken();
+    } catch (err) {
+      showError("ログインが必要です");
+      return;
+    }
+
     let stream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({
         audio: deviceId ? { deviceId: { exact: deviceId } } : true,
       });
     } catch (err) {
-      showError("マイクへのアクセスに失敗しました。ブラウザのマイク許可を確認してください。\n詳細: " + err.message);
+      showError("マイクへのアクセスに失敗しました。\n詳細: " + err.message);
       return;
     }
 
-    // リセット
     document.getElementById("transcript-box").innerHTML = '<span class="placeholder">録音中... 15秒ごとに文字起こしが更新されます</span>';
     document.getElementById("minutes-section").style.display = "none";
     allSamples = [];
     partialSamples = [];
     minutesMarkdown = "";
 
-    // WebSocket 接続
+    // WebSocket 接続（トークンをクエリパラメータで渡す）
     const wsProtocol = location.protocol === "https:" ? "wss:" : "ws:";
-    ws = new WebSocket(`${wsProtocol}//${location.host}/ws/transcribe`);
+    ws = new WebSocket(`${wsProtocol}//${location.host}/ws/transcribe?token=${encodeURIComponent(token)}`);
     ws.binaryType = "arraybuffer";
     ws.onopen = () => ws.send(JSON.stringify({ type: "set_mode", mode }));
     ws.onmessage = (event) => handleServerMessage(JSON.parse(event.data));
     ws.onerror = () => showError("WebSocket接続エラーが発生しました。");
     ws.onclose = () => setSpinner(false);
 
-    // Web Audio APIでPCM直接キャプチャ（コンテナ形式の問題を回避）
     micStream = stream;
     audioContext = new AudioContext();
     const source = audioContext.createMediaStreamSource(stream);
@@ -461,37 +717,26 @@
       allSamples.push(samples);
       partialSamples.push(samples);
 
-      // RMS計算（音量）
       let sum = 0;
       for (let i = 0; i < raw.length; i++) sum += raw[i] * raw[i];
       const rms = Math.sqrt(sum / raw.length);
-
       updateVoiceIndicator(rms);
 
       const now = Date.now();
       const chunkAge = now - chunkStart;
 
       if (rms < SILENCE_THRESH) {
-        // 無音区間
         if (!silenceStart) silenceStart = now;
-        const silenceAge = now - silenceStart;
-        if (silenceAge >= SILENCE_MS && chunkAge >= MIN_CHUNK_MS) {
-          sendPartialChunk();
-        }
+        if (now - silenceStart >= SILENCE_MS && chunkAge >= MIN_CHUNK_MS) sendPartialChunk();
       } else {
-        // 発話中：無音タイマーをリセット
         silenceStart = null;
-        // 最大チャンク時間を超えたら強制送信
-        if (chunkAge >= MAX_CHUNK_MS) {
-          sendPartialChunk();
-        }
+        if (chunkAge >= MAX_CHUNK_MS) sendPartialChunk();
       }
     };
 
     source.connect(scriptProcessor);
     scriptProcessor.connect(audioContext.destination);
 
-    // タイマー
     seconds = 0;
     updateTimer();
     timerInterval = setInterval(() => { seconds++; updateTimer(); }, 1000);
@@ -506,7 +751,6 @@
   // ===== 録音停止 =====
   function stopRecording() {
     clearInterval(timerInterval);
-
     document.getElementById("start-btn").disabled = false;
     document.getElementById("stop-btn").disabled = true;
     document.getElementById("rec-dot").classList.remove("active");
@@ -516,13 +760,11 @@
     bar.style.setProperty("--level", "0%");
     bar.classList.remove("speaking");
 
-    // AudioContext を停止
     if (scriptProcessor) { scriptProcessor.disconnect(); scriptProcessor = null; }
     const sampleRate = audioContext ? audioContext.sampleRate : 44100;
     if (audioContext) { audioContext.close(); audioContext = null; }
     if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
 
-    // 全サンプルをWAVエンコードして送信
     if (ws && ws.readyState === WebSocket.OPEN && allSamples.length > 0) {
       setSpinner(true, "音声を文字起こし中...");
       const wav = encodeWAV(mergeFloat32(allSamples), sampleRate);
@@ -537,14 +779,11 @@
   // ===== サーバーメッセージ処理 =====
   function handleServerMessage(data) {
     switch (data.type) {
-      case "transcript_partial": {
-        // リアルタイム：チャンクの文字起こしを追記
+      case "transcript_partial":
         appendTranscript(data.text);
         setSpinner(false);
         break;
-      }
       case "transcript": {
-        // 最終文字起こし（全体）で上書き
         const box = document.getElementById("transcript-box");
         box.innerHTML = "";
         const span = document.createElement("span");
@@ -553,29 +792,25 @@
         setSpinner(true, "議事録を生成中...");
         break;
       }
-      case "generating_minutes": {
+      case "generating_minutes":
         setSpinner(true, "議事録を生成中...");
         break;
-      }
-      case "minutes": {
+      case "minutes":
         setSpinner(false);
         minutesMarkdown = data.text;
         showMinutes(data.text);
+        loadHistory(); // 履歴を更新
         break;
-      }
-      case "warning": {
+      case "warning":
         console.warn(data.message);
         break;
-      }
-      case "error": {
+      case "error":
         setSpinner(false);
         showError(data.message);
         break;
-      }
     }
   }
 
-  // ===== 文字起こし追記 =====
   function appendTranscript(text) {
     const box = document.getElementById("transcript-box");
     const ph = box.querySelector(".placeholder");
@@ -586,56 +821,39 @@
     box.scrollTop = box.scrollHeight;
   }
 
-  // ===== 議事録表示（Markdownパース） =====
   function showMinutes(md) {
     const section = document.getElementById("minutes-section");
-    const body = document.getElementById("minutes-body");
-    body.innerHTML = parseMarkdown(md);
+    document.getElementById("minutes-body").innerHTML = parseMarkdown(md);
     section.style.display = "block";
     section.scrollIntoView({ behavior: "smooth" });
   }
 
-  // 軽量Markdownパーサー（外部ライブラリなし）
   function parseMarkdown(md) {
     let html = md
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-      // 見出し
       .replace(/^### (.+)$/gm, "<h3>$1</h3>")
       .replace(/^## (.+)$/gm, "<h2>$1</h2>")
       .replace(/^# (.+)$/gm, "<h1>$1</h1>")
-      // 太字
       .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-      // 斜体
       .replace(/\*(.+?)\*/g, "<em>$1</em>")
-      // 箇条書き
       .replace(/^[*\-] (.+)$/gm, "<li>$1</li>")
-      // 番号付きリスト
       .replace(/^\d+\. (.+)$/gm, "<li>$1</li>")
-      // 連続する<li>をulでラップ
       .replace(/(<li>[\s\S]+?<\/li>)(\n(?!<li>)|$)/g, (m) => "<ul>" + m + "</ul>")
-      // 空行を段落区切りに
       .replace(/\n{2,}/g, "</p><p>")
-      // 残りの改行
       .replace(/\n/g, "<br>");
-
     return "<p>" + html + "</p>";
   }
 
-  // ===== ダウンロード =====
   function downloadMinutes() {
     if (!minutesMarkdown) return;
-    const now = new Date();
-    const ts = now.toISOString().slice(0, 19).replace(/[T:]/g, "-");
+    const ts = new Date().toISOString().slice(0, 19).replace(/[T:]/g, "-");
     const blob = new Blob([minutesMarkdown], { type: "text/markdown;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
-    a.download = `minutes_${ts}.md`;
-    a.click();
+    a.href = url; a.download = `minutes_${ts}.md`; a.click();
     URL.revokeObjectURL(url);
   }
 
-  // ===== ユーティリティ =====
   function updateTimer() {
     const m = String(Math.floor(seconds / 60)).padStart(2, "0");
     const s = String(seconds % 60).padStart(2, "0");
@@ -643,8 +861,7 @@
   }
 
   function setSpinner(active, label = "処理中...") {
-    const wrap = document.getElementById("transcript-spinner");
-    wrap.classList.toggle("active", active);
+    document.getElementById("transcript-spinner").classList.toggle("active", active);
     document.getElementById("spinner-label").textContent = label;
   }
 
@@ -653,12 +870,10 @@
     box.textContent = msg;
     box.classList.add("active");
   }
-
   function hideError() {
     document.getElementById("error-box").classList.remove("active");
   }
 
-  // ===== VADチャンク送信 =====
   function sendPartialChunk() {
     if (partialSamples.length === 0 || !ws || ws.readyState !== WebSocket.OPEN) {
       partialSamples = [];
@@ -678,7 +893,6 @@
     });
   }
 
-  // ===== 音声レベルインジケーター =====
   function updateVoiceIndicator(rms) {
     const bar = document.getElementById("voice-bar");
     if (!bar) return;
@@ -689,12 +903,9 @@
       const label = document.getElementById("voice-status-label");
       if (label) label.textContent = speaking ? "発話中" : "待機中";
     }
-    // バーの幅でレベル表示（最大100%）
-    const pct = Math.min(100, Math.round(rms / 0.1 * 100));
-    bar.style.setProperty("--level", pct + "%");
+    bar.style.setProperty("--level", Math.min(100, Math.round(rms / 0.1 * 100)) + "%");
   }
 
-  // ===== WAVエンコーダー =====
   function mergeFloat32(arrays) {
     const total = arrays.reduce((s, a) => s + a.length, 0);
     const out = new Float32Array(total);
@@ -704,19 +915,15 @@
   }
 
   function encodeWAV(samples, sampleRate) {
-    const dataLen = samples.length * 2; // 16-bit PCM
+    const dataLen = samples.length * 2;
     const buf = new ArrayBuffer(44 + dataLen);
     const v = new DataView(buf);
     const write = (off, str) => { for (let i = 0; i < str.length; i++) v.setUint8(off + i, str.charCodeAt(i)); };
-    write(0,  "RIFF"); v.setUint32(4,  36 + dataLen, true);
-    write(8,  "WAVE"); write(12, "fmt ");
-    v.setUint32(16, 16, true);     // chunk size
-    v.setUint16(20, 1,  true);     // PCM
-    v.setUint16(22, 1,  true);     // mono
-    v.setUint32(24, sampleRate, true);
-    v.setUint32(28, sampleRate * 2, true); // byte rate
-    v.setUint16(32, 2,  true);     // block align
-    v.setUint16(34, 16, true);     // bits per sample
+    write(0, "RIFF"); v.setUint32(4, 36 + dataLen, true);
+    write(8, "WAVE"); write(12, "fmt ");
+    v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, sampleRate, true); v.setUint32(28, sampleRate * 2, true);
+    v.setUint16(32, 2, true); v.setUint16(34, 16, true);
     write(36, "data"); v.setUint32(40, dataLen, true);
     let off = 44;
     for (let i = 0; i < samples.length; i++) {
@@ -726,9 +933,6 @@
     }
     return new Blob([buf], { type: "audio/wav" });
   }
-
-  // ===== 起動 =====
-  loadDevices();
 </script>
 </body>
 </html>

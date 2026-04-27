@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
-MODEL = "claude-sonnet-4-5"
+MODEL = "claude-sonnet-4-6"
 
 SYSTEM_PROMPT = """\
 あなたは優秀な議事録作成アシスタントです。
@@ -89,3 +89,47 @@ def save_minutes(content: str, output_dir: str = "outputs") -> str:
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(content)
     return filepath
+
+
+def save_to_firestore(db, uid: str, transcript: str, minutes_text: str) -> str:
+    """Firestore に議事録を保存して document ID を返す"""
+    from firebase_admin import firestore as fb_fs
+    title = _extract_title(minutes_text)
+    _, doc_ref = db.collection("users").document(uid).collection("minutes").add({
+        "transcript": transcript,
+        "minutes_text": minutes_text,
+        "title": title,
+        "created_at": fb_fs.SERVER_TIMESTAMP,
+    })
+    return doc_ref.id
+
+
+def list_from_firestore(db, uid: str) -> list[dict]:
+    """Firestore からユーザーの議事録一覧を取得（新しい順）"""
+    from google.cloud.firestore_v1 import Query as FSQuery
+    docs = (
+        db.collection("users").document(uid).collection("minutes")
+        .order_by("created_at", direction=FSQuery.DESCENDING)
+        .limit(20)
+        .stream()
+    )
+    result = []
+    for doc in docs:
+        data = doc.to_dict()
+        created_at = data.get("created_at")
+        result.append({
+            "id": doc.id,
+            "title": data.get("title", "議事録"),
+            "created_at": created_at.isoformat() if created_at else "",
+            "minutes_text": data.get("minutes_text", ""),
+        })
+    return result
+
+
+def _extract_title(minutes_text: str) -> str:
+    """議事録テキストから1行目をタイトルとして抽出"""
+    for line in minutes_text.split("\n"):
+        line = line.strip().lstrip("#").strip()
+        if line:
+            return line[:40]
+    return "議事録"

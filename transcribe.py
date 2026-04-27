@@ -91,7 +91,7 @@ async def _transcribe_local(audio_path: str) -> str:
     """ローカルWhisperで文字起こし（ブロッキング処理を別スレッドで実行）"""
     loop = asyncio.get_event_loop()
     if WHISPER_DIARIZE:
-        result = await loop.run_in_executor(None, _run_diarized_whisper, audio_path)
+        result = await loop.run_in_executor(None, _run_local_diarized, audio_path)
     else:
         result = await loop.run_in_executor(None, _run_local_whisper, audio_path)
     return result
@@ -100,9 +100,9 @@ async def _transcribe_local(audio_path: str) -> str:
 def _run_local_whisper(audio_path: str) -> str:
     model = _get_local_model()
     options = {
-        "temperature": 0,          # ハルシネーション抑制
-        "fp16": False,             # CPU/MPS で安定動作
-        "condition_on_previous_text": False,  # チャンク間の誤伝播を防ぐ
+        "temperature": 0,
+        "fp16": False,
+        "condition_on_previous_text": False,
         "no_speech_threshold": 0.5,
         "logprob_threshold": -1.0,
         "compression_ratio_threshold": 2.4,
@@ -115,13 +115,8 @@ def _run_local_whisper(audio_path: str) -> str:
     return result["text"].strip()
 
 
-def _run_diarized_whisper(audio_path: str) -> str:
-    """openai-whisper + resemblyzer で話者分離つき文字起こし"""
-    import numpy as np
-    from resemblyzer import preprocess_wav
-    from sklearn.cluster import AgglomerativeClustering
-
-    # 1. Whisperでセグメント単位の文字起こし
+def _run_local_diarized(audio_path: str) -> str:
+    """ローカルWhisperでセグメント取得 → 話者分離"""
     model = _get_local_model()
     options = {
         "temperature": 0,
@@ -134,12 +129,64 @@ def _run_diarized_whisper(audio_path: str) -> str:
     if WHISPER_PROMPT:
         options["initial_prompt"] = WHISPER_PROMPT
 
-    whisper_result = model.transcribe(audio_path, **options)
-    segments = whisper_result.get("segments", [])
+    result = model.transcribe(audio_path, **options)
+    segments = result.get("segments", [])
     if not segments:
         return ""
 
-    # 2. resemblyzerで各セグメントの話者埋め込みを取得
+    diarized = _apply_diarization(audio_path, segments)
+    return diarized if diarized else result["text"].strip()
+
+
+async def _transcribe_with_api(audio_path: str) -> str:
+    """OpenAI Whisper APIで文字起こし（話者分離ONの場合はセグメント取得）"""
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise ValueError("OPENAI_API_KEY が設定されていません")
+
+    client = openai.AsyncOpenAI(api_key=api_key)
+
+    with open(audio_path, "rb") as audio_file:
+        kwargs = {
+            "model": "whisper-1",
+            "file": audio_file,
+            "response_format": "verbose_json" if WHISPER_DIARIZE else "text",
+        }
+        if WHISPER_LANG:
+            kwargs["language"] = WHISPER_LANG
+        if WHISPER_PROMPT:
+            kwargs["prompt"] = WHISPER_PROMPT
+
+        response = await client.audio.transcriptions.create(**kwargs)
+
+    if not WHISPER_DIARIZE:
+        return response.strip()
+
+    segments = [
+        {"start": s.start, "end": s.end, "text": s.text}
+        for s in (response.segments or [])
+    ]
+    if not segments:
+        return response.text.strip()
+
+    loop = asyncio.get_event_loop()
+    diarized = await loop.run_in_executor(None, _apply_diarization, audio_path, segments)
+    return diarized if diarized else response.text.strip()
+
+
+def _apply_diarization(
+    audio_path: str,
+    segments: list[dict],
+) -> str:
+    """
+    resemblyzer + AgglomerativeClustering で話者を推定しテキストを整形する。
+    segments: [{"start": float, "end": float, "text": str}, ...]
+    失敗時は空文字を返す（呼び出し側でフォールバック）。
+    """
+    import numpy as np
+    from resemblyzer import preprocess_wav
+    from sklearn.cluster import AgglomerativeClustering
+
     try:
         encoder = _get_voice_encoder()
         wav = preprocess_wav(audio_path)
@@ -150,7 +197,6 @@ def _run_diarized_whisper(audio_path: str) -> str:
             start = int(seg["start"] * sample_rate)
             end = int(seg["end"] * sample_rate)
             clip = wav[start:end]
-            # 短すぎるクリップはスキップ（resemblyzerの最小要件）
             if len(clip) < sample_rate * 0.5:
                 embeddings.append(None)
             else:
@@ -158,11 +204,10 @@ def _run_diarized_whisper(audio_path: str) -> str:
 
         valid_indices = [i for i, e in enumerate(embeddings) if e is not None]
         if len(valid_indices) < 2:
-            return whisper_result["text"].strip()
+            return ""
 
         valid_embeddings = np.array([embeddings[i] for i in valid_indices])
 
-        # 3. コサイン距離で階層クラスタリング（話者数自動推定）
         clustering = AgglomerativeClustering(
             n_clusters=None,
             distance_threshold=0.45,
@@ -170,14 +215,12 @@ def _run_diarized_whisper(audio_path: str) -> str:
             linkage="average",
         )
         labels = clustering.fit_predict(valid_embeddings)
-
         speaker_map = {i: f"SPEAKER_{label:02d}" for i, label in zip(valid_indices, labels)}
 
     except Exception as e:
-        print(f"[transcribe] 話者分離失敗、テキストのみ返します: {e}")
-        return whisper_result["text"].strip()
+        print(f"[transcribe] 話者分離失敗: {e}")
+        return ""
 
-    # 4. テキスト整形
     lines = []
     current_speaker = None
     current_texts = []
@@ -201,30 +244,9 @@ def _run_diarized_whisper(audio_path: str) -> str:
     return "\n".join(lines)
 
 
-async def _transcribe_with_api(audio_path: str) -> str:
-    """OpenAI Whisper APIで文字起こし"""
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        raise ValueError("OPENAI_API_KEY が設定されていません")
-
-    client = openai.AsyncOpenAI(api_key=api_key)
-
-    with open(audio_path, "rb") as audio_file:
-        kwargs = {
-            "model": "whisper-1",
-            "file": audio_file,
-        }
-        if WHISPER_LANG:
-            kwargs["language"] = WHISPER_LANG
-
-        response = await client.audio.transcriptions.create(**kwargs)
-
-    return response.text.strip()
-
-
 def preload_model():
     """サーバー起動時にローカルモデルをプリロード"""
     if WHISPER_MODE == "local":
         _get_local_model()
-        if WHISPER_DIARIZE:
-            _get_voice_encoder()
+    if WHISPER_DIARIZE:
+        _get_voice_encoder()

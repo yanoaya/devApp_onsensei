@@ -3,9 +3,14 @@ uvicorn[standard]==0.30.6
 websockets==13.1
 python-dotenv==1.0.1
 anthropic==0.40.0
-openai==1.51.0
-openai-whisper
-resemblyzer
-scikit-learn
+openai>=1.52.0
+firebase-admin>=6.5.0
 python-multipart==0.0.12
 aiofiles==24.1.0
+
+# ローカルWhisperモード (WHISPER_MODE=local)
+openai-whisper>=20231117
+
+# 話者分離 (WHISPER_DIARIZE=true)
+resemblyzer>=0.1.1.dev0
+scikit-learn>=1.3.0
